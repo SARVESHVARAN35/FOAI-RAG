@@ -1,17 +1,36 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
 from app.core.config import settings
+from app.routes.rag import router as rag_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
-app = FastAPI(title=settings.APP_NAME, version="0.1.0", debug=settings.DEBUG)
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    from app.rag.pipeline import RAGPipeline
+
+    application.state.rag_pipeline = RAGPipeline()
+    yield
+
+
+app = FastAPI(
+    title="Enterprise IT Incident Knowledge RAG Assistant",
+    description=(
+        "A RAG-based API for troubleshooting enterprise IT incidents "
+        "using approved knowledge documents."
+    ),
+    version="1.0.0",
+    debug=settings.DEBUG,
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,3 +41,13 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/api")
+app.include_router(rag_router, prefix="/rag")
+
+
+@app.get("/")
+def root():
+    return {
+        "message": (
+            "Enterprise IT Incident Knowledge RAG Assistant API is running."
+        )
+    }
