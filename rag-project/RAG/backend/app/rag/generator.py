@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from google import genai
+from groq import Groq
 import os
 
 
@@ -10,18 +10,18 @@ class Generator:
 
     def __init__(self):
 
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
 
         if not api_key:
             raise ValueError(
-                "GEMINI_API_KEY is not configured."
+                "GROQ_API_KEY is not configured."
             )
 
-        self.client = genai.Client(
+        self.client = Groq(
             api_key=api_key
         )
 
-        self.model = "gemini-3.8-flash"
+        self.model = "openai/gpt-oss-20b"
 
 
     def generate(
@@ -31,9 +31,10 @@ class Generator:
     ):
 
         if not documents:
+
             return (
-                "No sufficiently relevant approved knowledge "
-                "was found for this incident."
+                "No sufficiently relevant approved "
+                "knowledge was found for this incident."
             )
 
 
@@ -68,10 +69,23 @@ Answer:
 """
 
 
-        interaction = self.client.interactions.create(
+        response = self.client.chat.completions.create(
             model=self.model,
-            input=prompt
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an Enterprise IT Incident "
+                        "Knowledge Assistant."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.2
         )
 
 
-        return interaction.output_text
+        return response.choices[0].message.content

@@ -59,12 +59,26 @@ class RAGPipeline:
         self.generator = Generator()
 
 
+    def reload_knowledge(self):
+        self.vector_store.load(
+            str(self.vector_store_path)
+        )
+
+        with open(
+            self.metadata_path,
+            "r",
+            encoding="utf-8"
+        ) as file:
+            self.metadata = json.load(file)
+
+
     def query(
         self,
         user_query: str,
-        retrieval_k: int = 5,
-        final_k: int = 3
+        retrieval_k: int = 15,
+        final_k: int = 5
     ):
+        self.reload_knowledge()
 
         # ====================================================
         # STEP 1: CREATE QUERY EMBEDDING

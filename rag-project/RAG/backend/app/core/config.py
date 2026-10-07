@@ -1,6 +1,7 @@
 from functools import lru_cache
-from typing import List
+from typing import List, Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,9 +15,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     CORS_ORIGINS: str = "http://localhost:5173"
 
-    JWT_SECRET_KEY: str = "change-me"
-    JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    JWT_SECRET_KEY: str = Field(min_length=32, repr=False)
+    JWT_ALGORITHM: Literal["HS256", "HS384", "HS512"] = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, gt=0)
 
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_MB: int = 10

@@ -16,7 +16,7 @@ No custom ML/DL training. Not a ServiceNow/Jira clone. Not a generic PDF chatbot
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Backend setup, PostgreSQL, psycopg 3, env config, health endpoint | BUILT (verify locally) |
-| 2 | Auth: User model, JWT, password hashing, login, RBAC | TODO |
+| 2 | Auth: registration, JWT, password hashing, login, RBAC | BUILT |
 | 3 | Incidents: CRUD, status, attachments | TODO |
 | 4 | Knowledge ingestion: upload, extraction, chunking, embeddings, FAISS | TODO |
 | 5 | RAG: query embedding, top-K, context, LLM, sources, no-match | TODO |
@@ -117,12 +117,22 @@ rag-project/
 Files present today are those needed for Phase 1; the rest are added phase by phase.
 
 ## Frontend routes (Phase 9)
-Public: /login. Engineer: /dashboard /incidents /incidents/new /incidents/:id /rag /resolutions.
-Lead: /lead/dashboard /lead/reviews /lead/reviews/:id /lead/knowledge. Admin: /admin/dashboard /admin/users /admin/knowledge.
+Public: /login and /register. Authenticated routes include /dashboard, /incidents, /assistant, and /resolutions. IT_LEAD and ADMIN can open /reviews; ADMIN can open /knowledge.
 
-## API modules (planned)
-/api/health | /api/auth | /api/users | /api/incidents (+ /{id}, /attachments, /resolve) | /api/rag/search, /api/rag/query |
-/api/resolutions (+ /{id}, /submit) | /api/reviews (+ /{id}/approve, /reject, /request-changes) | /api/knowledge (+ /upload, /{id}).
+## Authentication API
+The existing `public.users` table is used without an authentication migration. No users are created automatically. Public registration creates SUPPORT_ENGINEER accounts only; an existing ADMIN can create IT_LEAD or ADMIN accounts with `POST /auth/users`.
+
+- `POST /auth/register` creates an account and returns basic user information.
+- `POST /auth/login` returns a bearer JWT.
+- `GET /auth/me` returns the authenticated user's basic information.
+- `GET /auth/users` and `POST /auth/users` let an ADMIN list and create users.
+- `POST /rag/query` requires a valid bearer JWT.
+- `GET /reviews/pending` is limited to IT_LEAD and ADMIN. Review actions reject a user's own resolution.
+- Knowledge listing and PDF uploads are limited to ADMIN.
+
+Set `JWT_SECRET_KEY`, `JWT_ALGORITHM=HS256`, and `ACCESS_TOKEN_EXPIRE_MINUTES=60` in `backend/.env`. Start the backend from the backend directory with `python -m uvicorn app.main:app --reload`; start the frontend from `frontend` with `npm run dev`.
+
+To test in Swagger at `http://localhost:8000/docs`, register a real SUPPORT_ENGINEER account, log in, then use the returned token with **Authorize**. Call `GET /auth/me` and `POST /rag/query`. Verify role protection by calling `GET /reviews/pending` and `POST /knowledge/pdf` as SUPPORT_ENGINEER; both should return 403. To test IT_LEAD/ADMIN permissions, use accounts provisioned by an existing ADMIN; if there is no ADMIN account, provision the intended real account through the organization's trusted database administration process. Do not create test or fake privileged users.
 
 ---
 

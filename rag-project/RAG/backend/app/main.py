@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
 from app.core.config import settings
-from app.routes.rag import router as rag_router
+from app.routes.rag import knowledge_router, router as rag_router
+from app.routes.auth import router as auth_router
+from app.routes.incident import router as incidents_router
+from app.routes.resolutions import router as resolutions_router
+from app.routes.reviews import router as reviews_router
 
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
@@ -41,8 +45,12 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix="/api")
+app.include_router(auth_router)
 app.include_router(rag_router, prefix="/rag")
-
+app.include_router(knowledge_router)
+app.include_router(incidents_router)
+app.include_router(resolutions_router)
+app.include_router(reviews_router)
 
 @app.get("/")
 def root():
